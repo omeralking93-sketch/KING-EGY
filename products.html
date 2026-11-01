@@ -16,7 +16,7 @@
 <div class="actions"><button id="saveBtn">حفظ التعديلات</button><button id="hideBtn" class="secondary">إخفاء المنتج</button></div><p id="saveMsg" class="muted"></p></div></section></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
 const db=window.supabase.createClient('https://brrqmpnuoqatbmldqjcd.supabase.co','sb_publishable_3mccs5kj2dXwuUjcUp2Lzw_wQO62kqU');
-const $=id=>document.getElementById(id), sizes=['M','L','XL','XXL'], colors=[['Black','أسود'],['White','أبيض']];
+const $=id=>document.getElementById(id), sizes=['M','L','XL','XXL'], colors=[['Black','أسود'],['White','رصاصي']];
 let products=[], currentImage=null;
 $('loginBtn').onclick=async()=>{const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginMsg').textContent='تعذر الدخول: '+error.message;$('loginMsg').className='error';return}await start()};
 async function start(){const {data:{user}}=await db.auth.getUser();if(!user||user.email?.toLowerCase()!=='alkingo651@gmail.com')return;$('login').classList.add('hidden');$('app').classList.remove('hidden');await loadProducts()}
