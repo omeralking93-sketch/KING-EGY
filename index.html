@@ -13,6 +13,7 @@
 <section class="hero"><div><h1 data-ar="راحتك أهم" data-en="YOUR COMFORT FIRST">راحتك أهم</h1><p data-ar="ملابس رجالي بتصميم مريح وشكل مميز." data-en="Men's wear designed for comfort and style.">ملابس رجالي بتصميم مريح وشكل مميز.</p><a href="#products"><button data-ar="تسوق الآن" data-en="Shop now">تسوق الآن</button></a></div></section>
 <main class="wrap" id="products"><h2 class="section-title" data-ar="المنتجات" data-en="Products">المنتجات</h2><div class="grid" id="productGrid"><p class="muted">جارٍ تحميل المنتجات...</p></div></main>
 <footer class="footer">KING.EGY — <span data-ar="راحتك أهم" data-en="Your comfort first">راحتك أهم</span></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 let lang='ar';const $=id=>document.getElementById(id);
 function applyLang(){document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';document.querySelectorAll('[data-ar]').forEach(el=>el.textContent=el.dataset[lang]);$('langBtn').textContent=lang==='ar'?'English':'العربية'}
