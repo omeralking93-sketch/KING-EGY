@@ -10,8 +10,16 @@
 <p id="message" aria-live="polite" class="muted"></p></section>
 <section id="result" class="card hidden"><div class="top"><h2 id="orderTitle"></h2><span class="status" id="statusBadge"></span></div><p class="muted" id="orderMeta"></p><div id="items"></div><h3>سجل تحديثات الطلب</h3><div id="history"></div><p class="muted" id="notificationHint">فعّل إشعارات المتصفح علشان يوصلك تنبيه عند تغيير حالة الطلب أثناء فتح صفحة المتابعة.</p>
 <div class="actions"><button class="btn secondary" id="notifyBtn" type="button">تفعيل إشعارات المتصفح</button><button class="btn danger hidden" id="cancelBtn" type="button">إلغاء الطلب</button></div><p id="cancelMessage" class="muted"></p></section></main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
-const db=window.supabase.createClient('https://brrqmpnuoqatbmldqjcd.supabase.co','sb_publishable_3mccs5kj2dXwuUjcUp2Lzw_wQO62kqU');
+<script>
+const API_URL='https://brrqmpnuoqatbmldqjcd.supabase.co/functions/v1/customer-orders';
+const API_KEY='sb_publishable_3mccs5kj2dXwuUjcUp2Lzw_wQO62kqU';
+async function callOrderApi(action){
+ const response=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':API_KEY,'Authorization':'Bearer '+API_KEY},body:JSON.stringify({action,order_number:$('orderNumber').value.trim(),phone:$('phone').value.trim()})});
+ if(response.status===404)return null;
+ const body=await response.json();
+ if(!response.ok)throw new Error(body.error||'Request failed');
+ return body;
+}
 const $=id=>document.getElementById(id);let currentOrder=null,pollTimer=null,lastStatus=null,notificationReady=typeof Notification!=='undefined'&&Notification.permission==='granted';
 const labels={new:'طلب جديد',confirmed:'تم تأكيد الطلب',preparing:'قيد التجهيز',shipped:'تم الشحن',delivered:'تم التسليم',cancelled:'تم إلغاء الطلب'};
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -28,8 +36,7 @@ function renderOrder(o,notify=false){
 }
 async function fetchOrder({notify=false}={}){
  if(!currentOrder&&!$('orderNumber').value.trim())return;
- const {data,error}=await db.rpc('customer_get_order',{p_order_number:$('orderNumber').value.trim(),p_phone:$('phone').value.trim()});
- if(error){if(!currentOrder)showMessage('تعذر البحث عن الطلب حاليًا. حاول مرة أخرى.','error');return}
+ let data;try{data=await callOrderApi('track')}catch(error){if(!currentOrder)showMessage('تعذر البحث عن الطلب حاليًا. حاول مرة أخرى.','error');return}
  if(!data){if(!currentOrder)showMessage('لم نعثر على طلب مطابق. تأكد من رقم الطلب ورقم الموبايل.','error');return}
  renderOrder(data,notify);if(!notify)showMessage('تم تحميل طلبك بنجاح.','success');
 }
@@ -37,8 +44,8 @@ $('lookupForm').addEventListener('submit',async e=>{e.preventDefault();$('lookup
 $('cancelBtn').onclick=async()=>{
  if(!currentOrder||currentOrder.status!=='preparing')return;
  if(!confirm('هل أنت متأكد من إلغاء الطلب؟ لا يمكن التراجع عن الإلغاء.'))return;
- $('cancelBtn').disabled=true;const {data,error}=await db.rpc('customer_cancel_order',{p_order_number:currentOrder.order_number,p_phone:$('phone').value.trim()});$('cancelBtn').disabled=false;
- if(error){$('cancelMessage').textContent='تعذر إلغاء الطلب. حاول مرة أخرى.';return}
+ $('cancelBtn').disabled=true;let data;try{data=await callOrderApi('cancel')}catch(error){$('cancelBtn').disabled=false;$('cancelMessage').textContent='تعذر إلغاء الطلب. حاول مرة أخرى.';return}$('cancelBtn').disabled=false;
+ if(!data){$('cancelMessage').textContent='بيانات الطلب غير صحيحة. راجع رقم الطلب ورقم الموبايل.';return}
  if(data?.ok){$('cancelMessage').textContent='تم إلغاء طلبك بنجاح.';await fetchOrder({notify:false})}
  else if(data?.reason==='not_cancellable'){$('cancelMessage').textContent='لا يمكن إلغاء الطلب بعد خروجه من حالة التجهيز.';await fetchOrder({notify:false})}
  else $('cancelMessage').textContent='بيانات الطلب غير صحيحة. راجع رقم الطلب ورقم الموبايل.';
