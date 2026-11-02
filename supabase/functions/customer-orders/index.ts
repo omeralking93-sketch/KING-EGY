@@ -64,8 +64,8 @@ Deno.serve(async (req: Request) => {
       const { data: owned, error: ownedError } = await db.from("device_order_access").select("order_id").eq("device_token", token).eq("order_id", order.id).maybeSingle();
       if (ownedError) throw ownedError;
       if (!owned) return new Response(JSON.stringify({ error: "Order not found" }), { status: 404, headers });
-      if (order.status !== "preparing") return new Response(JSON.stringify({ ok: false, reason: "not_cancellable", status: order.status }), { headers });
-      const { data: changed, error: updateError } = await db.from("orders").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", order.id).eq("status", "preparing").select("status").maybeSingle();
+      if (!["new", "confirmed", "preparing"].includes(order.status)) return new Response(JSON.stringify({ ok: false, reason: "not_cancellable", status: order.status }), { headers });
+      const { data: changed, error: updateError } = await db.from("orders").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", order.id).in("status", ["new", "confirmed", "preparing"]).select("status").maybeSingle();
       if (updateError) throw updateError;
       if (!changed) return new Response(JSON.stringify({ ok: false, reason: "not_cancellable" }), { headers });
       return new Response(JSON.stringify({ ok: true, status: changed.status }), { headers });
