@@ -29,6 +29,12 @@ Deno.serve(async (req: Request) => {
     if (!url || !serviceKey) throw new Error("Server configuration missing");
     const db = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
+    if (action === "feedback_list") {
+      const { data, error } = await db.from("customer_feedback").select("id,feedback_type,customer_name,message,status,admin_reply,created_at,updated_at").eq("device_token", token).order("created_at", { ascending: false });
+      if (error) throw error;
+      return new Response(JSON.stringify({ feedback: data ?? [] }), { headers });
+    }
+
     if (action === "list") {
       const { data: links, error: linkError } = await db.from("device_order_access").select("order_id").eq("device_token", token);
       if (linkError) throw linkError;
