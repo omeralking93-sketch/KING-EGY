@@ -57,8 +57,6 @@ Deno.serve(async (req: Request) => {
     if (action === "cancel") {
       const orderNumber = String(body.order_number ?? "").trim().toUpperCase();
       if (!/^KE-[A-F0-9]{10}$/.test(orderNumber)) return new Response(JSON.stringify({ error: "Invalid order" }), { status: 400, headers });
-      const { data: link, error: linkError } = await db.from("device_order_access").select("order_id").eq("device_token", token).maybeSingle();
-      if (linkError) throw linkError;
       // A device can own multiple orders; resolve the requested order by matching its number.
       const { data: order, error: orderError } = await db.from("orders").select("id,status").eq("order_number", orderNumber).maybeSingle();
       if (orderError) throw orderError;
