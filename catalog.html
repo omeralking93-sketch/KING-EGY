@@ -10,7 +10,7 @@
 <header class="top"><a class="brand" href="index.html">KING.EGY</a><div class="actions"><a class="ghost" id="homeLink" href="index.html?lang=ar">الصفحة الرئيسية</a><a class="ghost" id="ordersLink" href="my-orders.html">طلباتي</a><button class="ghost" id="langBtn" type="button">English</button></div></header>
 <main class="wrap"><h1 class="title" id="pageTitle">كل المنتجات</h1><div id="productGrid" class="grid"><p class="status">جارٍ تحميل المنتجات...</p></div></main>
 <footer class="footer">KING.EGY — <span id="footerText">راحتك أهم</span></footer>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script>
 const $=id=>document.getElementById(id);let lang=new URLSearchParams(location.search).get('lang')==='en'?'en':'ar',products=[],settings={};
 const db=window.supabase.createClient('https://brrqmpnuoqatbmldqjcd.supabase.co','sb_publishable_3mccs5kj2dXwuUjcUp2Lzw_wQO62kqU');
