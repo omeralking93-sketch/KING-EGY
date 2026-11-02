@@ -34,5 +34,10 @@ $('refreshBtn').onclick=()=>load(true);
 $('orders').addEventListener('click',async e=>{const b=e.target.closest('.cancel');if(!b)return;const number=b.dataset.order;if(!confirm('هل أنت متأكد من إلغاء الطلب؟ يمكن الإلغاء فقط أثناء التجهيز.'))return;b.disabled=true;try{const result=await api('cancel',{order_number:number});if(result.ok){msg('تم إلغاء الطلب بنجاح.','success');await load(false)}else{msg('لا يمكن إلغاء الطلب بعد خروجه من حالة التجهيز.','error');await load(false)}}catch(e){msg('تعذر إلغاء الطلب. حاول مرة أخرى.','error');b.disabled=false}});
 $('notifyBtn').onclick=async()=>{if(!('Notification'in window)){msg('المتصفح لا يدعم إشعارات النظام. التحديثات ستظهر عند فتح صفحة طلباتي.');return}const p=await Notification.requestPermission();notificationReady=p==='granted';msg(notificationReady?'تم تفعيل الإشعارات. اترك صفحة طلباتي مفتوحة لاستقبال التنبيهات.':'لم يتم السماح بالإشعارات. ستظهر التحديثات داخل الصفحة.')};
 load();timer=setInterval(()=>{if(document.visibilityState==='visible')load(true)},12000);
+const warmCache=new Set();
+function warmLink(a){const u=a&&a.getAttribute('href');if(!u||u[0]==='#'||u.startsWith('tel:')||u.startsWith('https:'))return;let t;try{t=new URL(u,location.href)}catch(e){return}if(t.origin!==location.origin||!t.pathname.endsWith('.html')||warmCache.has(t.href))return;warmCache.add(t.href);const l=document.createElement('link');l.rel='prefetch';l.href=t.href;document.head.appendChild(l)}
+document.addEventListener('pointerover',e=>warmLink(e.target.closest('a')),{passive:true});
+document.addEventListener('focusin',e=>warmLink(e.target.closest('a')));
+document.addEventListener('touchstart',e=>warmLink(e.target.closest('a')),{passive:true});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')load(true)});
 </script></body></html>
