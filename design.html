@@ -23,17 +23,32 @@
 <label class="field"><span>استدارة حواف البطاقات (بالبكسل)</span><input id="card_radius" type="number" min="0" max="40"></label>
 <label class="field"><span>ارتفاع صور المنتجات (بالبكسل)</span><input id="product_image_height" type="number" min="120" max="600"></label>
 </div></div>
+<div class="card" id="product-page"><h2>التحكم في صفحة تفاصيل المنتج</h2><p class="muted">الإعدادات دي بتتحكم في صفحة المنتج اللي العميل بيفتحها لما يضغط على أي منتج.</p><div class="grid">
+<label class="field"><span>ارتفاع الصورة الرئيسية (بالبكسل)</span><input id="product_gallery_height" type="number" min="180" max="900"></label>
+<label class="field"><span>حجم الصور المصغرة (بالبكسل)</span><input id="product_thumb_size" type="number" min="45" max="160"></label>
+<label class="field"><span>طريقة عرض الصورة</span><select id="product_image_fit"><option value="contain">إظهار الصورة كاملة</option><option value="cover">ملء مساحة الصورة</option></select></label>
+<label class="field"><span>نص زر الطلب بالعربي</span><input id="product_order_text_ar"></label>
+<label class="field"><span>نص زر الطلب بالإنجليزي</span><input id="product_order_text_en"></label>
+<label class="field"><span>نص زر واتساب بالعربي</span><input id="product_whatsapp_text_ar"></label>
+<label class="field"><span>نص زر واتساب بالإنجليزي</span><input id="product_whatsapp_text_en"></label>
+</div><div class="grid">
+<label class="field"><span><input id="product_show_description" type="checkbox" style="width:auto"> إظهار وصف المنتج</span></label>
+<label class="field"><span><input id="product_show_gallery_thumbs" type="checkbox" style="width:auto"> إظهار الصور المصغرة</span></label>
+<label class="field"><span><input id="product_show_colors" type="checkbox" style="width:auto"> إظهار اختيار اللون</span></label>
+<label class="field"><span><input id="product_show_sizes" type="checkbox" style="width:auto"> إظهار اختيار المقاس</span></label>
+<label class="field"><span><input id="product_show_whatsapp" type="checkbox" style="width:auto"> إظهار زر واتساب</span></label>
+</div></div>
 <div class="card"><h2>معاينة مباشرة</h2><p class="muted">المعاينة تتغير مع كل تعديل قبل الحفظ.</p><div class="preview" id="preview"><div class="preview-head"><b id="pLogo">KING.EGY</b><span id="pTagline">MEN'S WEAR</span></div><div class="preview-hero"><h2 id="pTitle">راحتك أهم</h2><p id="pText">ملابس رجالي بتصميم مريح وشكل مميز.</p><button class="btn" id="pButton">تسوق الآن</button></div><div class="preview-products"><div>صورة المنتج<br><b>اسم المنتج</b><p>600 جنيه</p></div><div>صورة المنتج<br><b>اسم المنتج</b><p>600 جنيه</p></div></div></div>
 <div class="row"><button class="btn" id="saveBtn">حفظ ونشر التصميم</button><button class="btn secondary" id="resetBtn">استعادة التصميم الأساسي</button><a class="btn secondary" target="_blank" href="index.html">فتح المتجر</a></div><p id="msg" class="muted"></p></div></section></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
 const db=window.supabase.createClient('https://brrqmpnuoqatbmldqjcd.supabase.co','sb_publishable_3mccs5kj2dXwuUjcUp2Lzw_wQO62kqU');
 const $=id=>document.getElementById(id);
-const defaults={bg:'#080808',panel:'#151515',text:'#f5f5f5',muted:'#aaaaaa',accent:'#ffffff',hero_bg:'#242424',button_text:'#080808',font:'Arial',logo:'KING.EGY',tagline:"MEN'S WEAR",hero_title_ar:'راحتك أهم',hero_title_en:'YOUR COMFORT FIRST',hero_text_ar:'ملابس رجالي بتصميم مريح وشكل مميز.',hero_text_en:"Men's wear designed for comfort and style.",hero_button_ar:'تسوق الآن',hero_button_en:'Shop now',hero_image:'',card_radius:14,product_image_height:260};
+const defaults={bg:'#080808',panel:'#151515',text:'#f5f5f5',muted:'#aaaaaa',accent:'#ffffff',hero_bg:'#242424',button_text:'#080808',font:'Arial',logo:'KING.EGY',tagline:"MEN'S WEAR",hero_title_ar:'راحتك أهم',hero_title_en:'YOUR COMFORT FIRST',hero_text_ar:'ملابس رجالي بتصميم مريح وشكل مميز.',hero_text_en:"Men's wear designed for comfort and style.",hero_button_ar:'تسوق الآن',hero_button_en:'Shop now',hero_image:'',card_radius:14,product_image_height:260,product_gallery_height:470,product_thumb_size:78,product_image_fit:'contain',product_show_description:true,product_show_gallery_thumbs:true,product_show_colors:true,product_show_sizes:true,product_show_whatsapp:true,product_order_text_ar:'اطلب الآن',product_order_text_en:'Order now',product_whatsapp_text_ar:'اطلب عبر واتساب',product_whatsapp_text_en:'Order on WhatsApp'};
 let design={...defaults};
-function read(){Object.keys(defaults).forEach(k=>{if($(k))design[k]=$(k).value});preview()}
-function fill(){Object.keys(defaults).forEach(k=>{if($(k))$(k).value=design[k]??defaults[k]});preview()}
+function read(){Object.keys(defaults).forEach(k=>{if($(k))design[k]=$(k).type==='checkbox'?$(k).checked:$(k).value});preview()}
+function fill(){Object.keys(defaults).forEach(k=>{if($(k)){if($(k).type==='checkbox')$(k).checked=design[k]??defaults[k];else $(k).value=design[k]??defaults[k]}});preview()}
 function preview(){const p=$('preview');p.style.background=design.bg;p.style.color=design.text;p.style.fontFamily=design.font;p.style.borderRadius=design.card_radius+'px';$('pLogo').textContent=design.logo;$('pTagline').textContent=design.tagline;$('pTitle').textContent=design.hero_title_ar;$('pText').textContent=design.hero_text_ar;$('pButton').textContent=design.hero_button_ar;$('pButton').style.background=design.accent;$('pButton').style.color=design.button_text;$('pTitle').parentElement.style.background=design.hero_bg;$('pTitle').parentElement.style.borderRadius=design.card_radius+'px';document.querySelectorAll('.preview-products div').forEach(x=>{x.style.background=design.panel;x.style.borderRadius=design.card_radius+'px'})}
-Object.keys(defaults).forEach(k=>$(k)?.addEventListener('input',read));
+Object.keys(defaults).forEach(k=>{const el=$(k);el?.addEventListener('input',read);el?.addEventListener('change',read)});
 async function start(){const {data:{user}}=await db.auth.getUser();if(!user||user.email?.toLowerCase()!=='alkingo651@gmail.com')return;$('login').classList.add('hidden');$('editor').classList.remove('hidden');const {data,error}=await db.from('store_settings').select('settings').eq('id',1).single();if(error){$('msg').textContent='تعذر تحميل التصميم: '+error.message;return}design={...defaults,...(data.settings||{})};fill()}
 $('loginBtn').onclick=async()=>{const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginMsg').textContent='تعذر الدخول: '+error.message;return}await start()};
 db.auth.getSession().then(({data})=>{if(data.session)start()});
