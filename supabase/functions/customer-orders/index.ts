@@ -29,6 +29,67 @@ Deno.serve(async (req: Request) => {
     if (!url || !serviceKey) throw new Error("Server configuration missing");
     const db = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
+    if (action === "submit") {
+      const customerName = String(body.customer_name ?? "").trim();
+      const phone = String(body.phone ?? "").trim();
+      const governorate = String(body.governorate ?? "").trim();
+      const city = String(body.city ?? "").trim();
+      const address = String(body.address ?? "").trim();
+      const notes = String(body.notes ?? "").trim();
+      const productSlug = String(body.product_slug ?? "").trim();
+      const items = body.items;
+
+      if (customerName.length < 2 || customerName.length > 120 ||
+          digits(phone).length < 8 || phone.length > 30 ||
+          governorate.length < 2 || governorate.length > 100 ||
+          address.length < 5 || address.length > 500 ||
+          city.length > 120 || notes.length > 1000 ||
+          !/^[a-z0-9][a-z0-9-]{0,159}$/i.test(productSlug) ||
+          !Array.isArray(items) || items.length < 1 || items.length > 40) {
+        return new Response(JSON.stringify({ error: "Invalid order details" }), { status: 400, headers });
+      }
+
+      const normalizedItems = [];
+      for (const item of items) {
+        const color = String(item?.color ?? "").trim();
+        const size = String(item?.size ?? "").trim();
+        const quantity = Number(item?.quantity);
+        if (color.length < 2 || color.length > 32 ||
+            !["M", "L", "XL", "XXL"].includes(size) ||
+            !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+          return new Response(JSON.stringify({ error: "Invalid order item" }), { status: 400, headers });
+        }
+        const existing = normalizedItems.find((x) => x.color === color && x.size === size);
+        if (existing) {
+          if (existing.quantity + quantity > 99) {
+            return new Response(JSON.stringify({ error: "Invalid item quantity" }), { status: 400, headers });
+          }
+          existing.quantity += quantity;
+        } else {
+          normalizedItems.push({ color, size, quantity });
+        }
+      }
+
+      const { data, error } = await db.rpc("submit_store_order_multi", {
+        p_customer_name: customerName,
+        p_phone: phone,
+        p_governorate: governorate,
+        p_city: city,
+        p_address: address,
+        p_notes: notes || null,
+        p_product_slug: productSlug,
+        p_items: normalizedItems,
+        p_device_token: token,
+      });
+      if (error) {
+        console.error("Order submission failed", { code: error.code, message: error.message });
+        return new Response(JSON.stringify({ error: "Unable to submit order" }), { status: 400, headers });
+      }
+      const order = Array.isArray(data) ? data[0] : data;
+      if (!order?.order_number) throw new Error("Order RPC returned no order number");
+      return new Response(JSON.stringify({ order }), { headers });
+    }
+
     if (action === "feedback_list") {
       const { data, error } = await db.from("customer_feedback").select("id,feedback_type,customer_name,message,status,admin_reply,created_at,updated_at").eq("device_token", token).order("created_at", { ascending: false });
       if (error) throw error;
