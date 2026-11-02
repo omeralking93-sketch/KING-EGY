@@ -24,7 +24,7 @@ function render(list,notify=false){
  $('orders').innerHTML=orders.map(o=>{
   const changed=previous.has(o.order_number)&&previous.get(o.order_number)!==o.status;
   if(changed&&notify&&notificationReady){try{new Notification('KING.EGY — تحديث الطلب',{body:'طلب '+o.order_number+' أصبح: '+(labels[o.status]||o.status),tag:'king-order-'+o.order_number})}catch(e){}}
-  const items=(o.items||[]).map(i=>'<div class="item"><b>'+esc(i.name_ar||i.name_en)+'</b><br>اللون: '+esc(i.color==='Black'?'أسود':'رصاصي')+' — المقاس: '+esc(i.size)+' — الكمية: '+Number(i.quantity)+'<br>'+Number(i.line_total_egp).toLocaleString('ar-EG')+' جنيه</div>').join('');
+  const items=(o.items||[]).map(i=>'<div class="item"><b>'+esc(i.name_ar||i.name_en)+'</b><br>اللون: '+esc(i.color==='Black'?'أسود':i.color==='White'?'رصاصي':i.color)+' — المقاس: '+esc(i.size)+' — الكمية: '+Number(i.quantity)+'<br>'+Number(i.line_total_egp).toLocaleString('ar-EG')+' جنيه</div>').join('');
   const history=(o.history||[]).map(h=>'<div class="history-row"><b>'+esc(labels[h.status]||h.status)+'</b><br><small class="muted">'+fmtDate(h.changed_at)+'</small></div>').join('')||'<p class="muted">لا توجد تحديثات مسجلة بعد.</p>';
   return '<article class="card"><div class="order-head"><h2>طلب رقم '+esc(o.order_number)+'</h2><span class="status">'+esc(labels[o.status]||o.status)+'</span></div><p class="muted">تاريخ الطلب: '+fmtDate(o.created_at)+' — آخر تحديث: '+fmtDate(o.updated_at)+'</p>'+items+'<p><b>الإجمالي: '+Number(o.total_egp).toLocaleString('ar-EG')+' جنيه</b></p><h3>سجل تحديثات الطلب</h3>'+history+(o.status==='preparing'?'<button class="btn danger cancel" data-order="'+esc(o.order_number)+'">إلغاء الطلب</button>':'')+'</article>';
  }).join('');
