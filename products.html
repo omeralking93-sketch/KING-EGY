@@ -14,7 +14,7 @@
 <h3>إدارة ألوان المنتج</h3><p class="muted">أضف أي لون بالاسم العربي والإنجليزي. كل لون جديد هيظهر له قسم مستقل لرفع مجموعة صوره، وكمان اختيارات المقاسات الخاصة به. الصور الكبيرة بيتم ضغطها وتحسينها تلقائيًا قبل الرفع لتسريع المتجر.</p><div id="colorManager" class="grid"></div><div class="grid"><label class="field"><span>اسم اللون بالعربي</span><input id="newColorAr" placeholder="مثال: كحلي"></label><label class="field"><span>اسم اللون بالإنجليزي</span><input id="newColorEn" placeholder="مثال: Navy"></label></div><button type="button" class="secondary" id="addColorBtn">＋ إضافة لون للمنتج</button><h3>صور كل لون</h3><div id="colorPhotoGroups" class="grid"></div><h3>الصور الموجودة حاليًا</h3><div id="currentGallery" class="grid"></div>
 <h3>الألوان والمقاسات المتاحة</h3><p class="muted">فعّل أو أوقف أي لون ومقاس. ويمكن تفعيل متابعة المخزون لكل اختيار.</p><div id="variants" class="variants"></div>
 <div class="actions"><button id="saveBtn">حفظ التعديلات</button><button id="hideBtn" class="secondary">إخفاء المنتج</button></div><p id="saveMsg" class="muted"></p></div></section></main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script><script>
 const db=window.supabase.createClient('https://brrqmpnuoqatbmldqjcd.supabase.co','sb_publishable_3mccs5kj2dXwuUjcUp2Lzw_wQO62kqU');
 const $=id=>document.getElementById(id), sizes=['M','L','XL','XXL'];
 let products=[], currentImage=null, currentGallery=[], colorOptions=[{color_code:'gray',name_ar:'رصاصي',name_en:'Gray',sort_order:0},{color_code:'black',name_ar:'أسود',name_en:'Black',sort_order:1}];
