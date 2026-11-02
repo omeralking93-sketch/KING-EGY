@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>طلباتي | KING.EGY</title><meta name="theme-color" content="#080808">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080808;color:#f5f5f5;font:16px Arial,Tahoma,sans-serif}.wrap{max-width:760px;margin:28px auto;padding:18px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{font-size:26px;font-weight:900;letter-spacing:2px}a{color:#fff}.card{background:#171717;border:1px solid #383838;border-radius:13px;padding:20px;margin:18px 0}.field{display:block;margin:13px 0}.field input{display:block;width:100%;padding:13px;margin-top:7px;background:#080808;color:#fff;border:1px solid #555;border-radius:8px;font:inherit}.btn{display:inline-block;width:100%;padding:13px;border:0;border-radius:8px;background:#fff;color:#000;font-weight:bold;font:inherit;cursor:pointer;margin-top:10px}.secondary{background:#333;color:#fff}.muted{color:#aaa;line-height:1.7}.error{color:#ff9b9b}.success{color:#a8e6b0}.status{display:inline-block;padding:7px 13px;border:1px solid #777;border-radius:25px;margin:8px 0}.item,.history-row{padding:12px 0;border-bottom:1px solid #333;line-height:1.8}.history-row:last-child,.item:last-child{border:0}.danger{background:#a92828;color:#fff}.hidden{display:none}.actions{display:flex;gap:10px;flex-wrap:wrap}.actions button{flex:1}@media(max-width:550px){.wrap{margin:10px auto}.card{padding:15px}}
+</style></head>
+<body><main class="wrap">
+<header class="top"><a class="brand" href="index.html" style="text-decoration:none">KING.EGY</a><a href="index.html">العودة للمتجر</a></header>
+<section class="card"><h1>طلباتي</h1><p class="muted">اكتب رقم الطلب ورقم الموبايل المستخدم عند الطلب لمتابعة الحالة أو إلغاء الطلب أثناء التجهيز.</p>
+<form id="lookupForm"><label class="field">رقم الطلب<input id="orderNumber" required placeholder="KE-XXXXXXXXXX" autocomplete="off"></label><label class="field">رقم الموبايل<input id="phone" required type="tel" inputmode="tel" autocomplete="tel" placeholder="رقم الموبايل المستخدم في الطلب"></label><button class="btn" id="lookupBtn">متابعة الطلب</button></form>
+<p id="message" aria-live="polite" class="muted"></p></section>
+<section id="result" class="card hidden"><div class="top"><h2 id="orderTitle"></h2><span class="status" id="statusBadge"></span></div><p class="muted" id="orderMeta"></p><div id="items"></div><h3>سجل تحديثات الطلب</h3><div id="history"></div><p class="muted" id="notificationHint">فعّل إشعارات المتصفح علشان يوصلك تنبيه عند تغيير حالة الطلب أثناء فتح صفحة المتابعة.</p>
+<div class="actions"><button class="btn secondary" id="notifyBtn" type="button">تفعيل إشعارات المتصفح</button><button class="btn danger hidden" id="cancelBtn" type="button">إلغاء الطلب</button></div><p id="cancelMessage" class="muted"></p></section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
+const db=window.supabase.createClient('https://brrqmpnuoqatbmldqjcd.supabase.co','sb_publishable_3mccs5kj2dXwuUjcUp2Lzw_wQO62kqU');
+const $=id=>document.getElementById(id);let currentOrder=null,pollTimer=null,lastStatus=null,notificationReady=typeof Notification!=='undefined'&&Notification.permission==='granted';
+const labels={new:'طلب جديد',confirmed:'تم تأكيد الطلب',preparing:'قيد التجهيز',shipped:'تم الشحن',delivered:'تم التسليم',cancelled:'تم إلغاء الطلب'};
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmtDate(v){return new Date(v).toLocaleString('ar-EG')}
+function showMessage(t,k='muted'){$('message').textContent=t;$('message').className=k}
+function renderOrder(o,notify=false){
+ const changed=lastStatus!==null&&lastStatus!==o.status;currentOrder=o;lastStatus=o.status;
+ $('result').classList.remove('hidden');$('orderTitle').textContent='طلب رقم '+o.order_number;$('statusBadge').textContent=labels[o.status]||o.status;
+ $('orderMeta').textContent='تاريخ الطلب: '+fmtDate(o.created_at)+' — آخر تحديث: '+fmtDate(o.updated_at);
+ $('items').innerHTML=(o.items||[]).map(i=>'<div class="item"><b>'+esc(i.name_ar||i.name_en)+'</b><br>اللون: '+esc(i.color==='Black'?'أسود':'رصاصي')+' — المقاس: '+esc(i.size)+' — الكمية: '+Number(i.quantity)+'<br>'+Number(i.line_total_egp).toLocaleString('ar-EG')+' جنيه</div>').join('');
+ $('history').innerHTML=(o.history||[]).map(h=>'<div class="history-row"><b>'+esc(labels[h.status]||h.status)+'</b><br><small class="muted">'+fmtDate(h.changed_at)+'</small></div>').join('')||'<p class="muted">لا توجد تحديثات مسجلة بعد.</p>';
+ $('cancelBtn').classList.toggle('hidden',o.status!=='preparing');
+ if(changed&&notify){const msg='حالة طلبك '+o.order_number+' اتغيرت إلى: '+(labels[o.status]||o.status);$('cancelMessage').textContent=msg;if(notificationReady){try{new Notification('KING.EGY — تحديث الطلب',{body:msg,tag:'king-order-'+o.order_number})}catch(e){}}}
+}
+async function fetchOrder({notify=false}={}){
+ if(!currentOrder&&!$('orderNumber').value.trim())return;
+ const {data,error}=await db.rpc('customer_get_order',{p_order_number:$('orderNumber').value.trim(),p_phone:$('phone').value.trim()});
+ if(error){if(!currentOrder)showMessage('تعذر البحث عن الطلب حاليًا. حاول مرة أخرى.','error');return}
+ if(!data){if(!currentOrder)showMessage('لم نعثر على طلب مطابق. تأكد من رقم الطلب ورقم الموبايل.','error');return}
+ renderOrder(data,notify);if(!notify)showMessage('تم تحميل طلبك بنجاح.','success');
+}
+$('lookupForm').addEventListener('submit',async e=>{e.preventDefault();$('lookupBtn').disabled=true;await fetchOrder();$('lookupBtn').disabled=false;if(currentOrder){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(()=>fetchOrder({notify:true}),12000)}});
+$('cancelBtn').onclick=async()=>{
+ if(!currentOrder||currentOrder.status!=='preparing')return;
+ if(!confirm('هل أنت متأكد من إلغاء الطلب؟ لا يمكن التراجع عن الإلغاء.'))return;
+ $('cancelBtn').disabled=true;const {data,error}=await db.rpc('customer_cancel_order',{p_order_number:currentOrder.order_number,p_phone:$('phone').value.trim()});$('cancelBtn').disabled=false;
+ if(error){$('cancelMessage').textContent='تعذر إلغاء الطلب. حاول مرة أخرى.';return}
+ if(data?.ok){$('cancelMessage').textContent='تم إلغاء طلبك بنجاح.';await fetchOrder({notify:false})}
+ else if(data?.reason==='not_cancellable'){$('cancelMessage').textContent='لا يمكن إلغاء الطلب بعد خروجه من حالة التجهيز.';await fetchOrder({notify:false})}
+ else $('cancelMessage').textContent='بيانات الطلب غير صحيحة. راجع رقم الطلب ورقم الموبايل.';
+};
+$('notifyBtn').onclick=async()=>{
+ if(!('Notification'in window)){$('notificationHint').textContent='المتصفح لا يدعم إشعارات النظام. ستظهر التحديثات داخل صفحة طلباتي.';return}
+ const p=await Notification.requestPermission();notificationReady=p==='granted';
+ $('notificationHint').textContent=notificationReady?'تم تفعيل إشعارات المتصفح. اترك صفحة المتابعة مفتوحة لاستقبال التنبيهات.':'لم يتم السماح بالإشعارات. ستظهر التحديثات داخل صفحة طلباتي.';
+};
+const pref=new URLSearchParams(location.search).get('order');if(pref)$('orderNumber').value=pref;
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&currentOrder)fetchOrder({notify:true})});
+</script></body></html>
