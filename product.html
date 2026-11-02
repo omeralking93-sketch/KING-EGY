@@ -18,7 +18,7 @@
 <h3 id="sizeLabel">المقاسات المتاحة</h3><div class="chips" id="sizes"></div>
 <p class="muted" id="availability"></p><div class="actions"><a id="orderBtn" class="btn" href="#">اطلب الآن</a><a id="whatsappBtn" class="btn secondary" href="#" target="_blank" rel="noopener">اطلب عبر واتساب</a></div></div>
 </section><p id="error" class="error"></p></main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script>
 const db=window.supabase.createClient('https://brrqmpnuoqatbmldqjcd.supabase.co','sb_publishable_3mccs5kj2dXwuUjcUp2Lzw_wQO62kqU');
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),slug=params.get('product'),lang=params.get('lang')==='en'?'en':'ar';
