@@ -59,6 +59,11 @@ function moveProduct(step){activeProductIndex=Math.max(0,Math.min(storeProducts.
 let storeDesign={};
 function applyStoreDesign(s){
  storeDesign=s||{};
+ const feedbackSection=$('feedback'),feedbackTitle=feedbackSection?.querySelector('h2'),feedbackDescription=feedbackSection?.querySelector('.box > p'),feedbackTrack=feedbackSection?.querySelector('.feedback-track-link');
+ if(feedbackSection)feedbackSection.hidden=storeDesign.feedback_enabled===false;
+ if(feedbackTitle){feedbackTitle.dataset.ar=storeDesign.feedback_title_ar||'اقتراح أو شكوى';feedbackTitle.dataset.en=storeDesign.feedback_title_en||'Suggestion or complaint'}
+ if(feedbackDescription){feedbackDescription.dataset.ar=storeDesign.feedback_description_ar||'رأيك يهمنا. ابعتلنا اقتراحك أو شكواك وهتوصل مباشرة لإدارة المتجر.';feedbackDescription.dataset.en=storeDesign.feedback_description_en||'Your feedback matters. Send us a suggestion or complaint directly to store management.'}
+ if(feedbackTrack){feedbackTrack.hidden=storeDesign.feedback_tracking_enabled===false;feedbackTrack.dataset.ar=storeDesign.feedback_tracking_text_ar||'متابعة الشكاوى';feedbackTrack.dataset.en=storeDesign.feedback_tracking_text_en||'Feedback status'}
  const root=document.documentElement;
  const vars={bg:'--bg',panel:'--panel',text:'--text',muted:'--muted',accent:'--accent',hero_bg:'--hero-bg',button_text:'--button-text',card_radius:'--card-radius',product_image_height:'--product-image-height',font:'--store-font'};
  Object.entries(vars).forEach(([k,v])=>{if(storeDesign[k])root.style.setProperty(v,(k==='card_radius'||k==='product_image_height')?storeDesign[k]+'px':storeDesign[k])});
