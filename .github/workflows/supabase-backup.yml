@@ -1,0 +1,75 @@
+name: Encrypted Supabase backup
+
+on:
+  schedule:
+    # Monthly backup on day 1 at 02:30 UTC.
+    - cron: "30 2 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: supabase-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      SUPABASE_URL: https://brrqmpnuoqatbmldqjcd.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_3mccs5kj2dXwuUjcUp2Lzw_wQO62kqU
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_DB_URL" || { echo "Missing SUPABASE_DB_URL secret"; exit 1; }
+          test -n "$BACKUP_PASSPHRASE" || { echo "Missing BACKUP_PASSPHRASE secret"; exit 1; }
+          test "${#BACKUP_PASSPHRASE}" -ge 24 || { echo "BACKUP_PASSPHRASE must be at least 24 characters"; exit 1; }
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Dump database roles, schema, and data
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f roles.sql --role-only
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f data.sql --data-only --use-copy
+
+      - name: Back up product image files
+        run: node .github/scripts/backup-images.mjs
+
+      - name: Package and encrypt backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backup-output
+          tar -czf backup-output/king-egy-backup.tar.gz roles.sql schema.sql data.sql backup-images
+          gpg --batch --yes --pinentry-mode loopback \
+            --passphrase "$BACKUP_PASSPHRASE" \
+            --symmetric --cipher-algo AES256 \
+            --output backup-output/king-egy-backup.tar.gz.gpg \
+            backup-output/king-egy-backup.tar.gz
+          rm -f backup-output/king-egy-backup.tar.gz roles.sql schema.sql data.sql
+          rm -rf backup-images
+
+      - name: Publish encrypted backup as a GitHub Release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="supabase-backup-$(date -u +%Y%m%d)-run${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" backup-output/king-egy-backup.tar.gz.gpg \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Encrypted KING.EGY backup $(date -u +%Y-%m-%d)" \
+            --notes "Encrypted AES-256 backup. Contains database roles/schema/data and product image files. Decryption requires the private BACKUP_PASSPHRASE secret. Do not publish or share the passphrase."
