@@ -23,7 +23,7 @@ The scheduled workflow runs monthly and can also be started manually from **Acti
 4. Restore the SQL exports to a suitable Supabase database using the matching PostgreSQL tools and connection string. Do not run a restore against the live production database without first checking the target and taking a fresh backup.
 5. Re-upload the files in `backup-images/` to the `product-images` Storage bucket, preserving the paths recorded in `manifest.json`. The backup image files are named sequentially; the manifest maps each file to its original public URL/path.
 
-A database dump does not itself contain Storage object bytes. This workflow separately archives the referenced product images. It does not back up Cloudflare configuration, custom domains, GitHub secrets, or Supabase project-level settings.
+A database dump does not itself contain Storage object bytes. This workflow separately archives the referenced product images. The SQL export covers the store's application database schema/data; it does not export Supabase Auth users/sessions, Cloudflare configuration, custom domains, GitHub secrets, or all Supabase project-level settings. The admin Auth account may need to be recreated if a full project rebuild is ever required.
 
 ## Keep-alive
 
