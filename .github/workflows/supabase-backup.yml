@@ -33,6 +33,18 @@ jobs:
           test -n "$BACKUP_PASSPHRASE" || { echo "Missing BACKUP_PASSPHRASE secret"; exit 1; }
           test "${#BACKUP_PASSPHRASE}" -ge 24 || { echo "BACKUP_PASSPHRASE must be at least 24 characters"; exit 1; }
 
+      - name: Safely verify connection URL identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const u = new URL(process.env.SUPABASE_DB_URL);
+          console.log("Database host:", u.hostname);
+          console.log("Database port:", u.port || "(default)");
+          console.log("Database username:", decodeURIComponent(u.username));
+          console.log("Database name:", u.pathname.replace(/^\//, ""));
+          NODE
+
       - uses: supabase/setup-cli@v1
         with:
           version: latest
