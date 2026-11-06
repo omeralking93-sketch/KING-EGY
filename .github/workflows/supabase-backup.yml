@@ -45,17 +45,17 @@ jobs:
           console.log("Database name:", u.pathname.replace(/^\//, ""));
           NODE
 
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Dump database roles, schema, and data
+      - name: Dump database roles, schema, and data with native PostgreSQL tools
         shell: bash
         run: |
           set -euo pipefail
-          supabase db dump --db-url "$SUPABASE_DB_URL" -f roles.sql --role-only
-          supabase db dump --db-url "$SUPABASE_DB_URL" -f schema.sql
-          supabase db dump --db-url "$SUPABASE_DB_URL" -f data.sql --data-only --use-copy
+          docker pull postgres:17
+          docker run --rm -e SUPABASE_DB_URL="$SUPABASE_DB_URL" postgres:17 sh -lc 'pg_dumpall --dbname="$SUPABASE_DB_URL" --roles-only' > roles.sql
+          docker run --rm -e SUPABASE_DB_URL="$SUPABASE_DB_URL" postgres:17 sh -lc 'pg_dump --dbname="$SUPABASE_DB_URL" --schema-only --no-owner --no-privileges' > schema.sql
+          docker run --rm -e SUPABASE_DB_URL="$SUPABASE_DB_URL" postgres:17 sh -lc 'pg_dump --dbname="$SUPABASE_DB_URL" --data-only --no-owner --no-privileges' > data.sql
+          test -s roles.sql
+          test -s schema.sql
+          test -s data.sql
 
       - name: Back up product image files
         run: node .github/scripts/backup-images.mjs
