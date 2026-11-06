@@ -2,9 +2,11 @@ name: Encrypted Supabase backup
 
 on:
   schedule:
-    # Monthly backup on day 1 at 02:30 UTC.
     - cron: "30 2 1 * *"
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/supabase-backup.yml"
 
 permissions:
   contents: write
@@ -33,27 +35,46 @@ jobs:
           test -n "$BACKUP_PASSPHRASE" || { echo "Missing BACKUP_PASSPHRASE secret"; exit 1; }
           test "${#BACKUP_PASSPHRASE}" -ge 24 || { echo "BACKUP_PASSPHRASE must be at least 24 characters"; exit 1; }
 
-      - name: Safely verify connection URL identity
+      - name: Parse connection settings without exposing credentials
         shell: bash
         run: |
           set -euo pipefail
           node --input-type=module <<'NODE'
+          import fs from 'node:fs';
           const u = new URL(process.env.SUPABASE_DB_URL);
-          console.log("Database host:", u.hostname);
-          console.log("Database port:", u.port || "(default)");
-          console.log("Database username:", decodeURIComponent(u.username));
-          console.log("Database name:", u.pathname.replace(/^\//, ""));
+          if (!['postgres:', 'postgresql:'].includes(u.protocol)) throw new Error('SUPABASE_DB_URL must be a PostgreSQL URL');
+          const values = {
+            PGHOST: u.hostname,
+            PGPORT: u.port || '5432',
+            PGDATABASE: decodeURIComponent(u.pathname.replace(/^\\//, '')),
+            PGUSER: decodeURIComponent(u.username),
+            PGPASSWORD: decodeURIComponent(u.password),
+            PGSSLMODE: 'require'
+          };
+          if (!values.PGHOST || !values.PGDATABASE || !values.PGUSER || !values.PGPASSWORD) throw new Error('Database URL is missing a required component');
+          for (const [key, value] of Object.entries(values)) {
+            fs.appendFileSync(process.env.GITHUB_ENV, key + '=' + value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A') + '\\n');
+          }
+          console.log('Connection host:', values.PGHOST);
+          console.log('Connection port:', values.PGPORT);
+          console.log('Connection user:', values.PGUSER);
+          console.log('Connection database:', values.PGDATABASE);
           NODE
 
-      - name: Dump database roles, schema, and data with native PostgreSQL tools
+      - name: Verify database authentication and dump application schema/data
         shell: bash
         run: |
           set -euo pipefail
           docker pull postgres:17
-          docker run --rm -e SUPABASE_DB_URL="$SUPABASE_DB_URL" postgres:17 sh -lc 'pg_dumpall --dbname="$SUPABASE_DB_URL" --roles-only' > roles.sql
-          docker run --rm -e SUPABASE_DB_URL="$SUPABASE_DB_URL" postgres:17 sh -lc 'pg_dump --dbname="$SUPABASE_DB_URL" --schema-only --no-owner --no-privileges' > schema.sql
-          docker run --rm -e SUPABASE_DB_URL="$SUPABASE_DB_URL" postgres:17 sh -lc 'pg_dump --dbname="$SUPABASE_DB_URL" --data-only --no-owner --no-privileges' > data.sql
-          test -s roles.sql
+          docker run --rm -e PGHOST -e PGPORT -e PGDATABASE -e PGUSER -e PGPASSWORD -e PGSSLMODE postgres:17 \
+            psql -X -v ON_ERROR_STOP=1 -Atc "select current_user || ' @ ' || current_database()"
+          # The KING.EGY application tables live in public. Supabase-managed auth/storage
+          # schemas are intentionally excluded; Storage objects are archived separately.
+          docker run --rm -e PGHOST -e PGPORT -e PGDATABASE -e PGUSER -e PGPASSWORD -e PGSSLMODE postgres:17 \
+            pg_dump --schema=public --schema-only --no-owner --no-privileges > schema.sql
+          docker run --rm -e PGHOST -e PGPORT -e PGDATABASE -e PGUSER -e PGPASSWORD -e PGSSLMODE postgres:17 \
+            pg_dump --schema=public --data-only --no-owner --no-privileges --no-comments > data.sql
+          printf '%s\\n' '-- Supabase-managed roles are provisioned by Supabase; no pg_dumpall roles export is used.' > roles.sql
           test -s schema.sql
           test -s data.sql
 
@@ -66,10 +87,10 @@ jobs:
           set -euo pipefail
           mkdir -p backup-output
           tar -czf backup-output/king-egy-backup.tar.gz roles.sql schema.sql data.sql backup-images
-          gpg --batch --yes --pinentry-mode loopback \
-            --passphrase "$BACKUP_PASSPHRASE" \
-            --symmetric --cipher-algo AES256 \
-            --output backup-output/king-egy-backup.tar.gz.gpg \
+          gpg --batch --yes --pinentry-mode loopback \\
+            --passphrase "$BACKUP_PASSPHRASE" \\
+            --symmetric --cipher-algo AES256 \\
+            --output backup-output/king-egy-backup.tar.gz.gpg \\
             backup-output/king-egy-backup.tar.gz
           rm -f backup-output/king-egy-backup.tar.gz roles.sql schema.sql data.sql
           rm -rf backup-images
@@ -81,7 +102,7 @@ jobs:
         run: |
           set -euo pipefail
           TAG="supabase-backup-$(date -u +%Y%m%d)-run${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" backup-output/king-egy-backup.tar.gz.gpg \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "Encrypted KING.EGY backup $(date -u +%Y-%m-%d)" \
-            --notes "Encrypted AES-256 backup. Contains database roles/schema/data and product image files. Decryption requires the private BACKUP_PASSPHRASE secret. Do not publish or share the passphrase."
+          gh release create "$TAG" backup-output/king-egy-backup.tar.gz.gpg \\
+            --repo "$GITHUB_REPOSITORY" \\
+            --title "Encrypted KING.EGY backup $(date -u +%Y-%m-%d)" \\
+            --notes "Encrypted AES-256 backup. Contains public application schema/data and referenced product image files. Supabase-managed roles are provisioned by Supabase. Decryption requires the private BACKUP_PASSPHRASE secret. Do not publish or share the passphrase."
