@@ -88,10 +88,10 @@ jobs:
           set -euo pipefail
           mkdir -p backup-output
           tar -czf backup-output/king-egy-backup.tar.gz roles.sql schema.sql data.sql backup-images
-          gpg --batch --yes --pinentry-mode loopback \\
-            --passphrase "$BACKUP_PASSPHRASE" \\
-            --symmetric --cipher-algo AES256 \\
-            --output backup-output/king-egy-backup.tar.gz.gpg \\
+          gpg --batch --yes --pinentry-mode loopback \
+            --passphrase "$BACKUP_PASSPHRASE" \
+            --symmetric --cipher-algo AES256 \
+            --output backup-output/king-egy-backup.tar.gz.gpg \
             backup-output/king-egy-backup.tar.gz
           rm -f backup-output/king-egy-backup.tar.gz roles.sql schema.sql data.sql
           rm -rf backup-images
@@ -103,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           TAG="supabase-backup-$(date -u +%Y%m%d)-run${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" backup-output/king-egy-backup.tar.gz.gpg \\
-            --repo "$GITHUB_REPOSITORY" \\
-            --title "Encrypted KING.EGY backup $(date -u +%Y-%m-%d)" \\
+          gh release create "$TAG" backup-output/king-egy-backup.tar.gz.gpg \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Encrypted KING.EGY backup $(date -u +%Y-%m-%d)" \
             --notes "Encrypted AES-256 backup. Contains public application schema/data and referenced product image files. Supabase-managed roles are provisioned by Supabase. Decryption requires the private BACKUP_PASSPHRASE secret. Do not publish or share the passphrase."
