@@ -46,14 +46,14 @@ jobs:
           const values = {
             PGHOST: u.hostname,
             PGPORT: u.port || '5432',
-            PGDATABASE: decodeURIComponent(u.pathname.replace(/^\\//, '')),
+            PGDATABASE: decodeURIComponent(u.pathname.replace(/^\//, '')),
             PGUSER: decodeURIComponent(u.username),
             PGPASSWORD: decodeURIComponent(u.password),
             PGSSLMODE: 'require'
           };
           if (!values.PGHOST || !values.PGDATABASE || !values.PGUSER || !values.PGPASSWORD) throw new Error('Database URL is missing a required component');
           for (const [key, value] of Object.entries(values)) {
-            fs.appendFileSync(process.env.GITHUB_ENV, key + '=' + value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A') + '\\n');
+            fs.appendFileSync(process.env.GITHUB_ENV, key + '=' + value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A') + '\n');
           }
           console.log('Connection host:', values.PGHOST);
           console.log('Connection port:', values.PGPORT);
@@ -74,7 +74,7 @@ jobs:
             pg_dump --schema=public --schema-only --no-owner --no-privileges > schema.sql
           docker run --rm -e PGHOST -e PGPORT -e PGDATABASE -e PGUSER -e PGPASSWORD -e PGSSLMODE postgres:17 \
             pg_dump --schema=public --data-only --no-owner --no-privileges --no-comments > data.sql
-          printf '%s\\n' '-- Supabase-managed roles are provisioned by Supabase; no pg_dumpall roles export is used.' > roles.sql
+          printf '%s\n' '-- Supabase-managed roles are provisioned by Supabase; no pg_dumpall roles export is used.' > roles.sql
           test -s schema.sql
           test -s data.sql
 
